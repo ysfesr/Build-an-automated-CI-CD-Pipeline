@@ -17,5 +17,5 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member=serviceAccount:$ACCOUNT_NAME@$PROJECT_ID.iam.gserviceaccount.com \
   --role=roles/iam.serviceAccountUser
 
-  gcloud iam service-accounts keys create key.json \
+  gcloud iam service-accounts keys create sa_credentiels.json \
     --iam-account $ACCOUNT_NAME@$PROJECT_ID.iam.gserviceaccount.com
