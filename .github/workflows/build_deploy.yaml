@@ -22,8 +22,6 @@ jobs:
       run: python --version
     - name: Install requirements
       run: pip install -r requirements.txt
-    - name: Check Syntax 
-      run: pycodestyle --statistics .
     - name: Run Migrations
       run: python manage.py migrate
     - name: Lint with flake8
