@@ -37,31 +37,31 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: [test]
-    steps:
-    - uses: actions/checkout@v1
+    env:
+      IMAGE_NAME: gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_APP_NAME }}
     
+    steps:
+    - name: Login
+      uses: google-github-actions/setup-gcloud@v0
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        service_account_email: ${{ secrets.GCP_EMAIL }}
+        service_account_key: ${{ secrets.GCP_CREDENTIALS }}
+
+    - name: Configure Docker
+      run: gcloud auth configure-docker --quiet
+
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
     - name: Build Docker image
-      uses: actions/docker/cli@master
-      with:
-        args: "build . --tag gcr.io/${{ secrets.GCP_PROJECT }}/${{ secrets.GCP_APP_NAME }}"
+      run: docker build . -t $IMAGE_NAME
 
-    - name: Authenticate into Google Cloud
-      uses: actions/gcloud/auth@master
-      env:
-        GCLOUD_AUTH: ${{ secrets.GCP_AUTH }}
+    - name: Test Docker image
+      run: docker run $IMAGE_NAME sh -c "go test -v"
 
-    - name: Configure Docker to use Google Cloud
-      uses: actions/gcloud/cli@master
-      with:
-        args: "auth configure-docker --quiet"
+    - name: Push Docker image
+      run: docker push $IMAGE_NAME
 
-    - name: Push image to GCR
-      uses: actions/gcloud/cli@master
-      with:
-        entrypoint: sh
-        args: -c "docker push gcr.io/${{ secrets.GCP_PROJECT }}/${{ secrets.GCP_APP_NAME }}"
-
-    - name: Install beta commands and deploy
-      uses: actions/gcloud/cli@master
-      with:
-        args: "components install beta --quiet && gcloud beta run deploy ${{ secrets.GCP_APP_NAME }} --quiet --image gcr.io/${{ secrets.GCP_PROJECT }}/${{ secrets.GCP_APP_NAME }} --region us-east1 --project ${{ secrets.GCP_PROJECT }} --platform managed"
+    - name: Deploy Docker image
+      run: gcloud run deploy ${{ secrets.GCP_PROJECT_ID }} --image $IMAGE_NAME --region us-central1 --platform managed
